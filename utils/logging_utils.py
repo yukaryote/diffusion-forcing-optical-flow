@@ -102,8 +102,9 @@ def log_flow_video(
         observation_gt = torch.zeros_like(observation_hat)
     observation_hat[:context_frames] = observation_gt[:context_frames]
 
+    condition_img = condition_img * 255
     video = torch.cat([condition_img, observation_hat, observation_gt], -1).detach().cpu().numpy()
-    video = np.transpose(np.clip(video, a_min=0.0, a_max=1.0) * 255, (1, 0, 2, 3, 4)).astype(np.uint8)
+    video = np.transpose(video, (1, 0, 2, 3, 4)).astype(np.uint8)
     # video[..., 1:] = video[..., :1]  # remove framestack, only visualize current frame
     n_samples = len(video)
     # use wandb directly here since pytorch lightning doesn't support logging videos yet

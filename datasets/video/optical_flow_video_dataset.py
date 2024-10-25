@@ -54,7 +54,6 @@ class OpticalFlowVideoDataset(BaseVideoDataset):
         flow = torch.from_numpy(flow).float().contiguous()
         flow = self.transform(flow)
 
-        print("type", type(flow))
         return (
             flow[:: self.frame_skip],
             video[:: self.frame_skip],
