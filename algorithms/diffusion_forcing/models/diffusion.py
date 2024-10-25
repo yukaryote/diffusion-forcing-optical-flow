@@ -22,11 +22,13 @@ class Diffusion(nn.Module):
         external_cond_dim: int,
         is_causal: bool,
         cfg: DictConfig,
+        out_channels: torch.Size = None
     ):
         super().__init__()
         self.cfg = cfg
 
         self.x_shape = x_shape
+        self.out_channels = out_channels
         self.external_cond_dim = external_cond_dim
         self.timesteps = cfg.timesteps
         self.sampling_timesteps = cfg.sampling_timesteps
@@ -61,7 +63,7 @@ class Diffusion(nn.Module):
                     attn_resolutions=attn_resolutions,
                     use_linear_attn=self.arch.use_linear_attn,
                     channels=x_channel,
-                    out_dim=x_channel,
+                    out_dim=x_channel if self.out_channels is None else self.out_channels,
                     external_cond_dim=self.external_cond_dim,
                     is_causal=self.is_causal,
                     use_init_temporal_attn=self.arch.use_init_temporal_attn,

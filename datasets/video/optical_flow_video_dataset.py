@@ -5,7 +5,7 @@ import torch
 import numpy as np
 from omegaconf import DictConfig
 from tqdm import tqdm
-from base_video_dataset import BaseVideoDataset
+from .base_video_dataset import BaseVideoDataset
 
 
 class OpticalFlowVideoDataset(BaseVideoDataset):
@@ -50,9 +50,14 @@ class OpticalFlowVideoDataset(BaseVideoDataset):
 
         video = torch.from_numpy(video / 255.0).float().permute(0, 3, 1, 2).contiguous()
         video = self.transform(video)
+
+        flow = torch.from_numpy(flow).float().contiguous()
+        flow = self.transform(flow)
+
+        print("type", type(flow))
         return (
-            video[:: self.frame_skip],
             flow[:: self.frame_skip],
+            video[:: self.frame_skip],
             nonterminal[:: self.frame_skip],
         )
 
@@ -60,7 +65,7 @@ class OpticalFlowVideoDataset(BaseVideoDataset):
 if __name__ == "__main__":
     import torch
     from unittest.mock import MagicMock
-    import tqdm
+    import tqdm 
 
     cfg = MagicMock()
     cfg.resolution = 256

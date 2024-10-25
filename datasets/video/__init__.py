@@ -1,2 +1,3 @@
 from .dmlab_video_dataset import DmlabVideoDataset
 from .minecraft_video_dataset import MinecraftVideoDataset
+from .optical_flow_video_dataset import OpticalFlowVideoDataset
