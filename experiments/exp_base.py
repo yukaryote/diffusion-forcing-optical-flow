@@ -195,6 +195,7 @@ class BaseLightningExperiment(BaseExperiment):
             max_epochs=self.cfg.training.max_epochs,
             max_steps=self.cfg.training.max_steps,
             max_time=self.cfg.training.max_time,
+            log_every_n_steps=self.cfg.training.batch_size
         )
 
         # if self.debug:

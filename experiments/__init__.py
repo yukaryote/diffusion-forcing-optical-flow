@@ -6,11 +6,13 @@ from lightning.pytorch.loggers.wandb import WandbLogger
 from .exp_base import BaseExperiment
 from .exp_video import VideoPredictionExperiment
 from .exp_planning import PlanningExperiment
+from .exp_flow import FlowPredictionExperiment
 
 # each key has to be a yaml file under '[project_root]/configurations/experiment' without .yaml suffix
 exp_registry = dict(
     exp_video=VideoPredictionExperiment,
     exp_planning=PlanningExperiment,
+    exp_flow=FlowPredictionExperiment
 )
 
 

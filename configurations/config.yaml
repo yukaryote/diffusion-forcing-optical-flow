@@ -1,6 +1,6 @@
 # configuration parsing starts here
 defaults:
-  - experiment: exp_video # experiment yaml file name in configurations/experiments folder [fixme]
+  - experiment: exp_flow # experiment yaml file name in configurations/experiments folder [fixme]
   - dataset: video_optical_flow # dataset yaml file name in configurations/dataset folder [fixme]
   - algorithm: df_flow # algorithm yaml file name in configurations/algorithm folder [fixme]
   - cluster: null # optional, cluster yaml file name in configurations/cluster folder. Leave null for local compute

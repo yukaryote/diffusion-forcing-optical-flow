@@ -79,7 +79,7 @@ class SpaceEfficientWandbLogger(WandbLogger):
 
         # get checkpoints to be saved with associated score
         checkpoints = _scan_checkpoints(checkpoint_callback, self._logged_model_time)
-
+        print("DEBUG ckpt", len(checkpoints))
         # log iteratively all new checkpoints
         artifacts = []
         for t, p, s, tag in checkpoints:
@@ -95,6 +95,10 @@ class SpaceEfficientWandbLogger(WandbLogger):
                         "save_top_k",
                         "save_weights_only",
                         "_every_n_train_steps",
+                        "_every_n_epochs",
+                        "every_n_epochs",
+                        "_every_n_epoch",
+                        "every_n_epoch"
                     ]
                     # ensure it does not break if `ModelCheckpoint` args change
                     if hasattr(checkpoint_callback, k)

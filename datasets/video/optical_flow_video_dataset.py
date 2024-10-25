@@ -29,9 +29,13 @@ class OpticalFlowVideoDataset(BaseVideoDataset):
     
     def download_dataset(self):
         return
+    
+    def __len__(self):
+        # HACK: set length of dataset to be big to ensure checkpointing happens
+        return 4900
 
     def __getitem__(self, idx):
-        idx = self.idx_remap[idx]
+        idx = self.idx_remap[idx] % 49
         file_idx, frame_idx = self.split_idx(idx)
         data_path = self.data_paths[file_idx]
         data = np.load(data_path)
@@ -45,7 +49,7 @@ class OpticalFlowVideoDataset(BaseVideoDataset):
         nonterminal = np.ones(self.n_frames)
         if len(video) < self.n_frames:
             video = np.pad(video, ((0, pad_len), (0, 0), (0, 0), (0, 0)))
-            actions = np.pad(actions, ((0, pad_len),))
+            flow = np.pad(flow, ((0, pad_len),))
             nonterminal[-pad_len:] = 0
 
         video = torch.from_numpy(video / 255.0).float().permute(0, 3, 1, 2).contiguous()
