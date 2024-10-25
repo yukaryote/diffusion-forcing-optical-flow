@@ -1,5 +1,7 @@
 from omegaconf import DictConfig
 import torch
+import torch.nn.functional as F
+import numpy as np
 from lightning.pytorch.utilities.types import STEP_OUTPUT
 from algorithms.common.metrics import (
     FrechetInceptionDistance,
@@ -8,9 +10,10 @@ from algorithms.common.metrics import (
 )
 from .df_base import DiffusionForcingBase
 from .models.diffusion import Diffusion
-from utils.logging_utils import log_video, get_validation_metrics_for_videos, log_flow_video
+from utils.logging_utils import get_validation_metrics_for_videos, log_flow_video
 from torchvision.utils import flow_to_image
 from einops import rearrange
+from tqdm import tqdm
 
 
 class DiffusionForcingFlow(DiffusionForcingBase):
@@ -191,7 +194,7 @@ class DiffusionForcingFlow(DiffusionForcingBase):
         xs = []
         cond = []
         for pred, gt, rgb_img in self.validation_step_outputs:
-            H, W = xs.shape[-2], xs.shape[-1]
+            H, W = rgb_img.shape[-2], rgb_img.shape[-1]
 
             # turn pred flow into image
             pred_flow = []
@@ -224,8 +227,8 @@ class DiffusionForcingFlow(DiffusionForcingBase):
             )
 
         metric_dict = get_validation_metrics_for_videos(
-            xs_pred[self.context_frames :],
-            xs[self.context_frames :],
+            xs_pred[self.context_frames :].float(),
+            xs[self.context_frames :].float(),
             lpips_model=self.validation_lpips_model,
             fid_model=self.validation_fid_model,
             fvd_model=(self.validation_fvd_model[0] if self.validation_fvd_model else None),
