@@ -1,6 +1,5 @@
 from typing import Sequence
-import tarfile
-import io
+import math
 import torch
 import numpy as np
 from omegaconf import DictConfig
@@ -32,17 +31,18 @@ class OpticalFlowVideoDataset(BaseVideoDataset):
     
     def __len__(self):
         # HACK: set length of dataset to be big to ensure checkpointing happens
-        return 4900
+        return 490
 
     def __getitem__(self, idx):
-        idx = self.idx_remap[idx] % 49
+        idx = self.idx_remap[idx] % np.sum(self.get_data_lengths("training"))
         file_idx, frame_idx = self.split_idx(idx)
         data_path = self.data_paths[file_idx]
         data = np.load(data_path)
+        frame_idx = 10  # hack: try overfitting
 
         # for now, have t = 1 (self.n_frames = 1)
         video = data["birdview_rgb"][frame_idx : frame_idx + self.n_frames]  # (t, h, w, 3)
-        flow = data["flow"][frame_idx : frame_idx + self.n_frames]  # (t, h, w, 2)
+        flow = data["flow"][frame_idx : frame_idx + self.n_frames]  # (t, 2, h, w)
 
         pad_len = self.n_frames - len(video)
 

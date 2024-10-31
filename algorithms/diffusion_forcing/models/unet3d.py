@@ -48,8 +48,8 @@ class Unet3D(nn.Module):
     ):
         super().__init__()
         self.channels = channels
-        if external_cond_dim:
-            raise NotImplementedError("External conditioning not yet implemented")
+        # if external_cond_dim:
+        #     raise NotImplementedError("External conditioning not yet implemented")
         self.external_cond_dim = external_cond_dim
         init_dim = default(init_dim, dim)
         out_dim = default(out_dim, channels)

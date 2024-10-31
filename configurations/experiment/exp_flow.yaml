@@ -10,12 +10,12 @@ training:
   max_epochs: -1
   max_steps: 20000
   checkpointing:
-    every_n_train_steps: 500
+    every_n_train_steps: 400
   optim:
     gradient_clip_val: 1.0
 
 validation:
-  val_every_n_step: 500
+  val_every_n_step: 400
   val_every_n_epoch: null
   batch_size: 7
   limit_batch: 1

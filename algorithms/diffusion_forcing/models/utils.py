@@ -43,6 +43,23 @@ def cosine_beta_schedule(timesteps, s=0.008):
     return torch.clip(betas, 0, 0.999)
 
 
+# old sigmoid_beta_schedule
+# def sigmoid_beta_schedule(timesteps, start=-3, end=3, tau=1, clamp_min=1e-5):
+#     """
+#     sigmoid schedule
+#     proposed in https://arxiv.org/abs/2212.11972 - Figure 8
+#     better for images > 64x64, when used during training
+#     """
+#     steps = timesteps + 1
+#     t = torch.linspace(0, timesteps, steps, dtype=torch.float64) / timesteps
+#     v_start = torch.tensor(start / tau).sigmoid()
+#     v_end = torch.tensor(end / tau).sigmoid()
+#     alphas_cumprod = (-((t * (end - start) + start) / tau).sigmoid() + v_end) / (v_end - v_start)
+#     alphas_cumprod = alphas_cumprod / alphas_cumprod[0]
+#     betas = 1 - (alphas_cumprod[1:] / alphas_cumprod[:-1])
+#     return torch.clip(betas, 0, 0.999)
+
+
 def sigmoid_beta_schedule(timesteps, start=-3, end=3, tau=1, clamp_min=1e-5):
     """
     sigmoid schedule
@@ -55,8 +72,30 @@ def sigmoid_beta_schedule(timesteps, start=-3, end=3, tau=1, clamp_min=1e-5):
     v_end = torch.tensor(end / tau).sigmoid()
     alphas_cumprod = (-((t * (end - start) + start) / tau).sigmoid() + v_end) / (v_end - v_start)
     alphas_cumprod = alphas_cumprod / alphas_cumprod[0]
-    betas = 1 - (alphas_cumprod[1:] / alphas_cumprod[:-1])
-    return torch.clip(betas, 0, 0.999)
+    alphas_cumprod = enforce_zero_terminal_snr(alphas_cumprod[1:])
+    alphas = alphas_cumprod[1:] / alphas_cumprod[:-1]
+    alphas = torch.cat([alphas_cumprod[0:1], alphas])
+    betas = 1 - alphas
+    return torch.clip(betas, 1e-9, 0.99999)
+
+def enforce_zero_terminal_snr(alphas_cumprod):
+    """
+    enforce zero terminal SNR following https://arxiv.org/abs/2305.08891
+    returns betas
+    """
+    alphas_cumprod_sqrt = torch.sqrt(alphas_cumprod)
+
+    # store old values
+    alphas_cumprod_sqrt_0 = alphas_cumprod_sqrt[0].clone()
+    alphas_cumprod_sqrt_T = alphas_cumprod_sqrt[-1].clone()
+    # shift so last timestep is zero
+    alphas_cumprod_sqrt -= alphas_cumprod_sqrt_T
+    # scale so first timestep is back to original value
+    alphas_cumprod_sqrt *= alphas_cumprod_sqrt_0 / alphas_cumprod_sqrt[0]
+    # convert to betas
+    alphas_cumprod = alphas_cumprod_sqrt**2
+    assert alphas_cumprod[-1] == 0, "terminal SNR not zero"
+    return alphas_cumprod
 
 
 class EinopsWrapper(nn.Module):

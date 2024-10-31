@@ -280,6 +280,7 @@ class Diffusion(nn.Module):
         noise = torch.clamp(noise, -self.clip_noise, self.clip_noise)
 
         noised_x = self.q_sample(x_start=x, t=noise_levels, noise=noise)
+        # import pdb; pdb.set_trace()
         model_pred = self.model_predictions(x=noised_x, t=noise_levels, external_cond=external_cond)
 
         pred = model_pred.model_out
@@ -299,7 +300,7 @@ class Diffusion(nn.Module):
         loss_weight = loss_weight.view(*loss_weight.shape, *((1,) * (loss.ndim - 2)))
         loss = loss * loss_weight
 
-        return x_pred, loss
+        return x_pred, loss, noised_x
 
     def sample_step(
         self,

@@ -76,6 +76,7 @@ def log_flow_video(
     condition_img,
     observation_hat,
     observation_gt=None,
+    noisy_input=None,
     step=0,
     namespace="train",
     prefix="video",
@@ -100,10 +101,12 @@ def log_flow_video(
         logger = wandb
     if observation_gt is None:
         observation_gt = torch.zeros_like(observation_hat)
+    if noisy_input is None:
+        noisy_input = torch.zeros_like(condition_img)
     observation_hat[:context_frames] = observation_gt[:context_frames]
 
     condition_img = condition_img * 255
-    video = torch.cat([condition_img, observation_hat, observation_gt], -1).detach().cpu().numpy()
+    video = torch.cat([condition_img, observation_hat, observation_gt, noisy_input], -1).detach().cpu().numpy()
     video = np.transpose(video, (1, 0, 2, 3, 4)).astype(np.uint8)
     # video[..., 1:] = video[..., :1]  # remove framestack, only visualize current frame
     n_samples = len(video)
