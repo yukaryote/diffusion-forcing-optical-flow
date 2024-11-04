@@ -14,6 +14,7 @@ from utils.logging_utils import get_validation_metrics_for_videos, log_flow_vide
 from torchvision.utils import flow_to_image
 from einops import rearrange
 from tqdm import tqdm
+from utils.logging_utils import get_sanity_metrics
 
 
 class DiffusionForcingFlow(DiffusionForcingBase):
@@ -27,7 +28,7 @@ class DiffusionForcingFlow(DiffusionForcingBase):
             cfg.n_frames // cfg.frame_stack
         )  # number of max tokens for the model
         super().__init__(cfg)
-        self.external_cond_dim = 1
+        self.external_cond_dim = 3
 
     def _build_model(self):
         # diffusion model with 2 output channels
@@ -90,6 +91,10 @@ class DiffusionForcingFlow(DiffusionForcingBase):
         # log the loss
         if batch_idx % 20 == 0:
             self.log("training/loss", loss)
+            for k, v in get_sanity_metrics(
+                {"xs": xs, "conditions": conditions}
+            ).items():
+                self.log(f"sanity/input_{k}", v)
 
         xs = self._unstack_and_unnormalize(xs)
         xs_pred = self._unstack_and_unnormalize(xs_pred)  # (t, b, 2, h, w)
@@ -214,10 +219,15 @@ class DiffusionForcingFlow(DiffusionForcingBase):
 
         xs = self._unstack_and_unnormalize(xs)
         xs_pred = self._unstack_and_unnormalize(xs_pred)
-        # xs_pred_noise = self._unstack_and_unnormalize(xs_pred_noise)
-        xs_pred_noise = rearrange(xs_pred_noise, "t b (fs c) ... -> (t fs) b c ...", fs=self.frame_stack)
+        xs_pred_noise = self._unstack_and_unnormalize(xs_pred_noise)
+
         self.validation_step_outputs.append(
-            (xs_pred.detach().cpu(), xs.detach().cpu(), conditions.detach().cpu(), xs_pred_noise.detach().cpu())
+            (
+                xs_pred.detach().cpu(),
+                xs.detach().cpu(),
+                conditions.detach().cpu(),
+                xs_pred_noise.detach().cpu(),
+            )
         )
 
         return loss
@@ -263,6 +273,7 @@ class DiffusionForcingFlow(DiffusionForcingBase):
                 cond,
                 xs_pred,
                 xs,
+                noisy,
                 step=None if namespace == "test" else self.global_step,
                 namespace=namespace + "_vis",
                 context_frames=self.context_frames,

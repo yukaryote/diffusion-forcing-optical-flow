@@ -25,24 +25,27 @@ class OpticalFlowVideoDataset(BaseVideoDataset):
     def get_data_lengths(self, split):
         lengths = [49] * len(self.get_data_paths(split))
         return lengths
-    
+
     def download_dataset(self):
         return
-    
+
     def __len__(self):
         # HACK: set length of dataset to be big to ensure checkpointing happens
-        return 490
+        return 4900
 
     def __getitem__(self, idx):
         idx = self.idx_remap[idx] % np.sum(self.get_data_lengths("training"))
         file_idx, frame_idx = self.split_idx(idx)
         data_path = self.data_paths[file_idx]
         data = np.load(data_path)
-        frame_idx = 10  # hack: try overfitting
 
         # for now, have t = 1 (self.n_frames = 1)
-        video = data["birdview_rgb"][frame_idx : frame_idx + self.n_frames]  # (t, h, w, 3)
-        flow = data["flow"][frame_idx : frame_idx + self.n_frames]  # (t, 2, h, w)
+        video = data["birdview_rgb"][
+            frame_idx : frame_idx + self.n_frames
+        ].copy()  # (t, h, w, 3)
+        flow = data["flow"][
+            frame_idx : frame_idx + self.n_frames
+        ].copy()  # (t, 2, h, w)
 
         pad_len = self.n_frames - len(video)
 
@@ -53,10 +56,12 @@ class OpticalFlowVideoDataset(BaseVideoDataset):
             nonterminal[-pad_len:] = 0
 
         video = torch.from_numpy(video / 255.0).float().permute(0, 3, 1, 2).contiguous()
-        video = self.transform(video)
+        # video = self.transform(video)
+
+        image_height, image_width = video.shape[-2:]
 
         flow = torch.from_numpy(flow).float().contiguous()
-        flow = self.transform(flow)
+        flow = flow / 16
 
         return (
             flow[:: self.frame_skip],
@@ -68,22 +73,25 @@ class OpticalFlowVideoDataset(BaseVideoDataset):
 if __name__ == "__main__":
     import torch
     from unittest.mock import MagicMock
-    import tqdm 
+    import tqdm
 
     cfg = MagicMock()
     cfg.resolution = 256
     cfg.external_cond_dim = 0
     cfg.n_frames = 1
     cfg.frame_skip = 1
-    cfg.save_dir = "/home/iyu/diffusion-forcing/data/rod_flow"
+    cfg.save_dir = "/home/iyu/scene-jacobian-discovery/diff-force/diffusion-forcing/data/rod_flow"
     cfg.validation_multiplier = 1
 
     dataset = OpticalFlowVideoDataset(cfg, "training")
     print(len(dataset))
+    print(dataset.get_data_lengths("training"))
 
     vid, flow, term = dataset[0]
     print("dataset item shapes", vid.shape, flow.shape, term.shape)
-    dataloader = torch.utils.data.DataLoader(dataset, batch_size=1, shuffle=True, num_workers=16)
+    dataloader = torch.utils.data.DataLoader(
+        dataset, batch_size=1, shuffle=True, num_workers=16
+    )
 
-    for batch in tqdm.tqdm(dataloader):
-        pass
+    for i in tqdm.tqdm(range(49)):
+        vid, flow, term = dataset[i]

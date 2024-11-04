@@ -48,7 +48,7 @@ class Diffusion(nn.Module):
         self._build_buffer()
 
     def _build_model(self):
-        x_channel = self.x_shape[0]
+        x_channel = self.x_shape[0] + self.external_cond_dim
         if len(self.x_shape) == 3:
             # video
             attn_resolutions = [self.arch.resolution // res for res in list(self.arch.attn_resolutions)]
@@ -162,7 +162,13 @@ class Diffusion(nn.Module):
         return rearrange(x, f"... -> ...{' 1' * len(self.x_shape)}")
 
     def model_predictions(self, x, t, external_cond=None):
-        model_output = self.model(x, t, external_cond, is_causal=self.is_causal)
+        # concatenate the condition to xs
+        xs_cat = torch.cat([x, external_cond], 2)
+
+        model_output = self.model(xs_cat, t, external_cond, is_causal=self.is_causal)
+
+        # uncat x and condition
+        x = x[:, :, :self.x_shape[0]]
 
         if self.objective == "pred_noise":
             pred_noise = torch.clamp(model_output, -self.clip_noise, self.clip_noise)

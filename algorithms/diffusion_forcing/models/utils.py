@@ -109,7 +109,13 @@ class EinopsWrapper(nn.Module):
         axes_lengths = parse_shape(x, pattern=self.from_shape)
         x = rearrange(x, f"{self.from_shape} -> {self.to_shape}")
         x = self.module(x, *args, **kwargs)
-        x = rearrange(x, f"{self.to_shape} -> {self.from_shape}", **axes_lengths)
+        try:
+            x = rearrange(x, f"{self.to_shape} -> {self.from_shape}", **axes_lengths)
+        except:
+            #HACK: ignore axes lengths when we concat condition to input
+            # or else the input and output axes lengths will not match
+            # and will throw an error
+            x = rearrange(x, f"{self.to_shape} -> {self.from_shape}")
         return x
 
 

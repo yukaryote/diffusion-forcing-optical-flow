@@ -4,8 +4,8 @@ defaults:
 save_dir: data/rod_flow
 n_frames: 1 # TODO: increase later
 resolution: 256
-data_mean: [0.1243762, 0.0115535315]
-data_std: [1.1944656, 0.03058018]
+data_mean: [0, 0]
+data_std: [1, 1]
 external_cond_dim: 1
 context_length: 0
 frame_skip: 1

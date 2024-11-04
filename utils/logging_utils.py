@@ -1,4 +1,6 @@
 from typing import Optional
+import torch
+from dataclasses import dataclass, asdict
 import wandb
 import numpy as np
 import torch
@@ -60,7 +62,9 @@ def log_video(
         observation_gt[:, :, i, [0, -1], :] = c
         observation_gt[:, :, i, :, [0, -1]] = c
     video = torch.cat([observation_hat, observation_gt], -1).detach().cpu().numpy()
-    video = np.transpose(np.clip(video, a_min=0.0, a_max=1.0) * 255, (1, 0, 2, 3, 4)).astype(np.uint8)
+    video = np.transpose(
+        np.clip(video, a_min=0.0, a_max=1.0) * 255, (1, 0, 2, 3, 4)
+    ).astype(np.uint8)
     # video[..., 1:] = video[..., :1]  # remove framestack, only visualize current frame
     n_samples = len(video)
     # use wandb directly here since pytorch lightning doesn't support logging videos yet
@@ -71,6 +75,7 @@ def log_video(
                 f"trainer/global_step": step,
             }
         )
+
 
 def log_flow_video(
     condition_img,
@@ -106,7 +111,12 @@ def log_flow_video(
     observation_hat[:context_frames] = observation_gt[:context_frames]
 
     condition_img = condition_img * 255
-    video = torch.cat([condition_img, observation_hat, observation_gt, noisy_input], -1).detach().cpu().numpy()
+    video = (
+        torch.cat([condition_img, observation_hat, observation_gt, noisy_input], -1)
+        .detach()
+        .cpu()
+        .numpy()
+    )
     video = np.transpose(video, (1, 0, 2, 3, 4)).astype(np.uint8)
     # video[..., 1:] = video[..., :1]  # remove framestack, only visualize current frame
     n_samples = len(video)
@@ -137,7 +147,9 @@ def get_validation_metrics_for_videos(
     """
     frame, batch, channel, height, width = observation_hat.shape
     output_dict = {}
-    observation_gt = observation_gt.type_as(observation_hat)  # some metrics don't fully support fp16
+    observation_gt = observation_gt.type_as(
+        observation_hat
+    )  # some metrics don't fully support fp16
 
     if frame < 9:
         fvd_model = None  # FVD requires at least 9 frames
@@ -153,8 +165,12 @@ def get_validation_metrics_for_videos(
     observation_gt = observation_gt.view(-1, channel, height, width)
 
     output_dict["mse"] = mean_squared_error(observation_hat, observation_gt)
-    output_dict["psnr"] = peak_signal_noise_ratio(observation_hat, observation_gt, data_range=2.0)
-    output_dict["ssim"] = structural_similarity_index_measure(observation_hat, observation_gt, data_range=2.0)
+    output_dict["psnr"] = peak_signal_noise_ratio(
+        observation_hat, observation_gt, data_range=2.0
+    )
+    output_dict["ssim"] = structural_similarity_index_measure(
+        observation_hat, observation_gt, data_range=2.0
+    )
     output_dict["uiqi"] = universal_image_quality_index(observation_hat, observation_gt)
     # operations for LPIPS and FID
     observation_hat = torch.clamp(observation_hat, -1.0, 1.0)
@@ -219,7 +235,9 @@ def plot_maze_layout(ax, maze_grid):
         for i, row in enumerate(maze_grid):
             for j, cell in enumerate(row):
                 if cell == "#":
-                    square = plt.Rectangle((i + 0.5, j + 0.5), 1, 1, edgecolor="black", facecolor="black")
+                    square = plt.Rectangle(
+                        (i + 0.5, j + 0.5), 1, 1, edgecolor="black", facecolor="black"
+                    )
                     ax.add_patch(square)
 
     ax.set_aspect("equal")
@@ -249,7 +267,9 @@ def plot_maze_layout(ax, maze_grid):
 
 def plot_start_goal(ax, start_goal: None):
     def draw_star(center, radius, num_points=5, color="black"):
-        angles = np.linspace(0.0, 2 * np.pi, num_points, endpoint=False) + 5 * np.pi / (2 * num_points)
+        angles = np.linspace(0.0, 2 * np.pi, num_points, endpoint=False) + 5 * np.pi / (
+            2 * num_points
+        )
         inner_radius = radius / 2.0
 
         points = []
@@ -267,18 +287,24 @@ def plot_start_goal(ax, start_goal: None):
         ax.add_patch(star)
 
     start_x, start_y = start_goal[0]
-    start_outer_circle = plt.Circle((start_x, start_y), 0.16, facecolor="white", edgecolor="black")
+    start_outer_circle = plt.Circle(
+        (start_x, start_y), 0.16, facecolor="white", edgecolor="black"
+    )
     ax.add_patch(start_outer_circle)
     start_inner_circle = plt.Circle((start_x, start_y), 0.08, color="black")
     ax.add_patch(start_inner_circle)
 
     goal_x, goal_y = start_goal[1]
-    goal_outer_circle = plt.Circle((goal_x, goal_y), 0.16, facecolor="white", edgecolor="black")
+    goal_outer_circle = plt.Circle(
+        (goal_x, goal_y), 0.16, facecolor="white", edgecolor="black"
+    )
     ax.add_patch(goal_outer_circle)
     draw_star((goal_x, goal_y), radius=0.08)
 
 
-def make_trajectory_images(env_id, trajectory, batch_size, start, goal, plot_end_points=True):
+def make_trajectory_images(
+    env_id, trajectory, batch_size, start, goal, plot_end_points=True
+):
     images = []
     for batch_idx in range(batch_size):
         fig, ax = plt.subplots()
@@ -287,7 +313,12 @@ def make_trajectory_images(env_id, trajectory, batch_size, start, goal, plot_end
         else:
             maze_grid = None
         plot_maze_layout(ax, maze_grid)
-        ax.scatter(trajectory[:, batch_idx, 0], trajectory[:, batch_idx, 1], c=np.arange(len(trajectory)), cmap="Reds"),
+        ax.scatter(
+            trajectory[:, batch_idx, 0],
+            trajectory[:, batch_idx, 1],
+            c=np.arange(len(trajectory)),
+            cmap="Reds",
+        ),
         if plot_end_points:
             start_goal = (start[batch_idx], goal[batch_idx])
             plot_start_goal(ax, start_goal)
@@ -295,7 +326,11 @@ def make_trajectory_images(env_id, trajectory, batch_size, start, goal, plot_end
         fig.tight_layout()
         fig.canvas.draw()
         img_shape = fig.canvas.get_width_height()[::-1] + (4,)
-        img = np.frombuffer(fig.canvas.buffer_rgba(), dtype=np.uint8).copy().reshape(img_shape)
+        img = (
+            np.frombuffer(fig.canvas.buffer_rgba(), dtype=np.uint8)
+            .copy()
+            .reshape(img_shape)
+        )
         images.append(img)
 
         plt.close()
@@ -325,7 +360,9 @@ def make_convergence_animation(
     start, goal = start[batch_idx], goal[batch_idx]
     trajectory = trajectory[:, batch_idx]
     plan_history = [[pm[:, batch_idx] for pm in pt] for pt in plan_history]
-    trajectory, plan_history = prune_history(plan_history, trajectory, goal, open_loop_horizon)
+    trajectory, plan_history = prune_history(
+        plan_history, trajectory, goal, open_loop_horizon
+    )
 
     # animate the convergence of the first plan
     fig, ax = plt.subplots()
@@ -413,7 +450,9 @@ def make_mpc_animation(
     start, goal = start[batch_idx], goal[batch_idx]
     trajectory = trajectory[:, batch_idx]
     plan_history = [[pm[:, batch_idx] for pm in pt] for pt in plan_history]
-    trajectory, plan_history = prune_history(plan_history, trajectory, goal, open_loop_horizon)
+    trajectory, plan_history = prune_history(
+        plan_history, trajectory, goal, open_loop_horizon
+    )
 
     # animate the convergence of the plans
     fig, ax = plt.subplots()
@@ -466,3 +505,19 @@ def make_mpc_animation(
     ani.save(filename, writer="ffmpeg", fps=24)
 
     return filename
+
+
+def get_sanity_metrics(x: dict):
+    metrics = {}
+    for k, v in x.items():
+        # Handle multi-level dictionaries.
+        if isinstance(v, dict):
+            child_metrics = get_sanity_metrics(v)
+            for ck, cv in child_metrics.items():
+                metrics[f"{k}_{ck}"] = cv
+
+        # Handle tensors.
+        elif isinstance(v, torch.Tensor) and v.is_floating_point():
+            metrics[f"{k}_max"] = v.max()
+            metrics[f"{k}_min"] = v.min()
+    return metrics
