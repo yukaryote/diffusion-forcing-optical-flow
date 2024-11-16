@@ -5,6 +5,7 @@ import numpy as np
 from omegaconf import DictConfig
 from tqdm import tqdm
 from .base_video_dataset import BaseVideoDataset
+import random
 
 
 class OpticalFlowVideoDataset(BaseVideoDataset):
@@ -23,7 +24,7 @@ class OpticalFlowVideoDataset(BaseVideoDataset):
         return paths
 
     def get_data_lengths(self, split):
-        lengths = [49] * len(self.get_data_paths(split))
+        lengths = [np.load(p)["birdview_rgb"].shape[0] for p in self.get_data_paths(split)]
         return lengths
 
     def download_dataset(self):
@@ -31,7 +32,7 @@ class OpticalFlowVideoDataset(BaseVideoDataset):
 
     def __len__(self):
         # HACK: set length of dataset to be big to ensure checkpointing happens
-        return 4900
+        return 49000
 
     def __getitem__(self, idx):
         idx = self.idx_remap[idx] % np.sum(self.get_data_lengths("training"))
@@ -39,6 +40,9 @@ class OpticalFlowVideoDataset(BaseVideoDataset):
         data_path = self.data_paths[file_idx]
         data = np.load(data_path)
 
+        # #HACK: have frame_idx be 10 or 29
+        # frame_idx = 10 if idx % 2 == 0 else 29
+        
         # for now, have t = 1 (self.n_frames = 1)
         video = data["birdview_rgb"][
             frame_idx : frame_idx + self.n_frames
