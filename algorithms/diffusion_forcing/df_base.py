@@ -31,6 +31,7 @@ class DiffusionForcingBase(BasePytorchAlgo):
         self.context_frames = cfg.context_frames
         self.chunk_size = cfg.chunk_size
         self.external_cond_dim = cfg.external_cond_dim
+        self.external_conditions = cfg.external_conditions
         self.causal = cfg.causal
 
         self.uncertainty_scale = cfg.uncertainty_scale
@@ -50,7 +51,7 @@ class DiffusionForcingBase(BasePytorchAlgo):
             x_shape=self.x_stacked_shape,
             external_cond_dim=self.external_cond_dim,
             is_causal=self.causal,
-            cfg=self.cfg.diffusion,
+            cfg=self.cfg.diffusion
         )
         self.register_data_mean_std(self.cfg.data_mean, self.cfg.data_std)
 

@@ -4,6 +4,7 @@ from dataclasses import dataclass, asdict
 import wandb
 import numpy as np
 import torch
+from einops import rearrange
 
 import matplotlib.pyplot as plt
 import cv2
@@ -109,8 +110,8 @@ def log_flow_video(
     if noisy_input is None:
         noisy_input = torch.zeros_like(condition_img)
     observation_hat[:context_frames] = observation_gt[:context_frames]
-
-    condition_img = condition_img * 255
+    
+    condition_img = condition_img[:, :, :3] * 255
     video = (
         torch.cat([condition_img, observation_hat, observation_gt, noisy_input], -1)
         .detach()
@@ -119,6 +120,7 @@ def log_flow_video(
     )
     video = np.transpose(video, (1, 0, 2, 3, 4)).astype(np.uint8)
     # video[..., 1:] = video[..., :1]  # remove framestack, only visualize current frame
+
     n_samples = len(video)
     # use wandb directly here since pytorch lightning doesn't support logging videos yet
     for i in range(n_samples):

@@ -17,9 +17,9 @@ from tqdm import tqdm
 from utils.logging_utils import get_sanity_metrics
 
 
-class DiffusionForcingFlow(DiffusionForcingBase):
+class DiffusionForcingDiffusionPolicy(DiffusionForcingBase):
     """
-    An optical flow prediction algorithm using Diffusion Forcing.
+    Diffusion policy using diffusion forcing.
     """
     EXTERNAL_COND_DIMS = {
         "jacobian": 8,
@@ -31,19 +31,18 @@ class DiffusionForcingFlow(DiffusionForcingBase):
         self.n_tokens = (
             cfg.n_frames // cfg.frame_stack
         )  # number of max tokens for the model
+        self.total_in_channels = 2 + sum([self.EXTERNAL_COND_DIMS[cond] for cond in self.external_conditions])
         super().__init__(cfg)
-        self.total_in_channels = sum([self.EXTERNAL_COND_DIMS[cond] for cond in self.external_conditions])
     
     def _build_model(self):
         # diffusion model with 2 output channels
-        self.total_in_channels = 2 + sum([self.EXTERNAL_COND_DIMS[cond] for cond in self.external_conditions])
         self.diffusion_model = Diffusion(
             x_shape=self.x_stacked_shape,
             in_channels=self.total_in_channels,
             external_cond_dim=self.external_cond_dim,
             is_causal=self.causal,
             cfg=self.cfg.diffusion,
-            out_channels=2,
+            out_channels=1,
         )
         self.register_data_mean_std(self.cfg.data_mean, self.cfg.data_std)
 

@@ -24,12 +24,12 @@ diffusion:
   cum_snr_decay: 0.96
   clip_noise: 6.
   # sampling
-  sampling_timesteps: 50  #100
+  sampling_timesteps: 100
   ddim_sampling_eta: 0.0
   stabilization_level: 15
   # architecture
   architecture:
-    network_size: 8 #16
+    network_size: 16
     attn_heads: 4
     attn_dim_head: 32
     dim_mults: [1, 2, 4]

@@ -8,7 +8,7 @@ from .base_video_dataset import BaseVideoDataset
 import random
 
 
-class OpticalFlowVideoDataset(BaseVideoDataset):
+class DiffusionPolicyDataset(BaseVideoDataset):
     """
     Optical Flow dataset
     """
@@ -55,7 +55,7 @@ class OpticalFlowVideoDataset(BaseVideoDataset):
             frame_idx : frame_idx + self.n_frames
         ].copy()  # (t, h, w, 3)
 
-        flow = data["traj_flow"][
+        du = data["du"][
             frame_idx : frame_idx + self.n_frames
         ].copy()  # (t, 2, h, w)
 
@@ -64,7 +64,7 @@ class OpticalFlowVideoDataset(BaseVideoDataset):
         nonterminal = np.ones(self.n_frames)
         if len(video) < self.n_frames:
             video = np.pad(video, ((0, pad_len), (0, 0), (0, 0), (0, 0)))
-            flow = np.pad(flow, ((0, pad_len), (0, 0), (0, 0), (0, 0)))
+            flow = np.pad(flow, ((0, pad_len),))
             nonterminal[-pad_len:] = 0
 
         video = torch.from_numpy(video / 255.0).float().permute(0, 3, 1, 2)
@@ -80,16 +80,9 @@ class OpticalFlowVideoDataset(BaseVideoDataset):
         if "timestep" in self.external_conditions:
             timestep_channel = torch.ones((self.n_frames, 1, video.shape[-2], video.shape[-1])) * torch.arange(frame_idx, frame_idx + self.n_frames).view(self.n_frames, 1, 1, 1).float() / len_video
             video = torch.cat([video, timestep_channel], dim=1)
-        # video = self.transform(video)
-
-        image_height, image_width = video.shape[-2:]
-
-        flow = torch.from_numpy(flow).float().contiguous()
-
-        flow = flow / self.max_flow  # normalize flow
 
         return (
-            flow[:: self.frame_skip],
+            du[:: self.frame_skip],
             video[:: self.frame_skip],
             nonterminal[:: self.frame_skip],
         )

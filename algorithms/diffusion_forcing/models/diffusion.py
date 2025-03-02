@@ -5,6 +5,7 @@ import torch
 from torch import nn
 from torch.nn import functional as F
 from einops import rearrange
+from.conditional_unet1d import ConditionalUnet1D
 from .unet3d import Unet3D
 from .transformer import Transformer
 from .utils import linear_beta_schedule, cosine_beta_schedule, sigmoid_beta_schedule, extract, EinopsWrapper
@@ -19,6 +20,7 @@ class Diffusion(nn.Module):
     def __init__(
         self,
         x_shape: torch.Size,
+        in_channels: int,
         external_cond_dim: int,
         is_causal: bool,
         cfg: DictConfig,
@@ -28,6 +30,7 @@ class Diffusion(nn.Module):
         self.cfg = cfg
 
         self.x_shape = x_shape
+        self.in_channels = in_channels
         self.out_channels = out_channels
         self.external_cond_dim = external_cond_dim
         self.timesteps = cfg.timesteps
@@ -48,31 +51,38 @@ class Diffusion(nn.Module):
         self._build_buffer()
 
     def _build_model(self):
-        x_channel = self.x_shape[0] + self.external_cond_dim
         if len(self.x_shape) == 3:
             # video
-            attn_resolutions = [self.arch.resolution // res for res in list(self.arch.attn_resolutions)]
-            self.model = EinopsWrapper(
-                from_shape="f b c h w",
-                to_shape="b c f h w",
-                module=Unet3D(
-                    dim=self.arch.network_size,
-                    attn_dim_head=self.arch.attn_dim_head,
-                    attn_heads=self.arch.attn_heads,
-                    dim_mults=self.arch.dim_mults,
-                    attn_resolutions=attn_resolutions,
-                    use_linear_attn=self.arch.use_linear_attn,
-                    channels=x_channel,
-                    out_dim=x_channel if self.out_channels is None else self.out_channels,
-                    external_cond_dim=self.external_cond_dim,
-                    is_causal=self.is_causal,
-                    use_init_temporal_attn=self.arch.use_init_temporal_attn,
-                    time_emb_type=self.arch.time_emb_type,
-                ),
-            )
+            if self.out_channels is None or self.out_channels > 1:
+                attn_resolutions = [self.arch.resolution // res for res in list(self.arch.attn_resolutions)]
+                self.model = EinopsWrapper(
+                    from_shape="f b c h w",
+                    to_shape="b c f h w",
+                    module=Unet3D(
+                        dim=self.arch.network_size,
+                        attn_dim_head=self.arch.attn_dim_head,
+                        attn_heads=self.arch.attn_heads,
+                        dim_mults=self.arch.dim_mults,
+                        attn_resolutions=attn_resolutions,
+                        use_linear_attn=self.arch.use_linear_attn,
+                        channels=self.in_channels,
+                        out_dim=self.in_channels if self.out_channels is None else self.out_channels,
+                        external_cond_dim=self.external_cond_dim,
+                        is_causal=self.is_causal,
+                        use_init_temporal_attn=self.arch.use_init_temporal_attn,
+                        time_emb_type=self.arch.time_emb_type,
+                    ),
+                )
+            elif self.out_channels == 1:
+                # 1d unet for diffusion policy
+                self.model = ConditionalUnet1D(
+                    input_dim=self.in_channels,
+                    global_cond_dim=self.external_cond_dim,
+                )
+
         elif len(self.x_shape) == 1:
             self.model = Transformer(
-                x_dim=x_channel,
+                x_dim=self.in_channels,
                 external_cond_dim=self.external_cond_dim,
                 size=self.arch.network_size,
                 num_layers=self.arch.num_layers,

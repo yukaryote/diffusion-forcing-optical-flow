@@ -7,9 +7,10 @@ lr: 1e-4
 # FROM DF_BASE
 x_shape: [2, 256, 256]
 frame_stack: 1
-data_mean: 0.5
-data_std: 0.5
-external_cond_dim: 1 #${dataset.action_dim}
+data_mean: [0, 0]
+data_std: [1, 1]
+external_cond_dim: 4 #${dataset.action_dim}
+external_conditions: ["rgb_video"]
 context_frames: 0
 # training hyperparameters
 
@@ -17,9 +18,9 @@ context_frames: 0
 uncertainty_scale: 1
 guidance_scale: 0.0
 chunk_size: 1 # -1 for full trajectory diffusion, number to specify diffusion chunk size
-scheduling_matrix: autoregressive
+scheduling_matrix: full_sequence
 noise_level: random_all
-causal: True
+causal: False
 
 # FROM DF_FLOW
 n_frames: 1
@@ -34,13 +35,13 @@ optimizer_beta: [0.9, 0.99]
 diffusion:
   # training
   beta_schedule: sigmoid
-  objective: pred_v
+  objective: pred_x0
   use_fused_snr: True
   cum_snr_decay: 0.96
   clip_noise: 6.
   # sampling
-  sampling_timesteps: 100
-  ddim_sampling_eta: 0.0
+  sampling_timesteps: 50 #100
+  ddim_sampling_eta: 1.0
   stabilization_level: 15
   schedule_fn_kwargs: {}
   use_snr: False
@@ -49,12 +50,12 @@ diffusion:
   timesteps: 1000
   # architecture
   architecture:
-    network_size: 64
+    network_size: 8 #16
     attn_heads: 4
-    attn_dim_head: 64
-    dim_mults: [1, 2, 4, 8]
+    attn_dim_head: 32
+    dim_mults: [1, 2, 4]
     resolution: 256
-    attn_resolutions: [16, 32, 64, 128]
+    attn_resolutions: [16, 32, 64]
     use_init_temporal_attn: True
     use_linear_attn: True
     time_emb_type: rotary
