@@ -101,7 +101,7 @@ if __name__ == "__main__":
     cfg.save_dir = "/home/iyu/scene-jacobian-discovery/diff-force/diffusion-forcing/data/rod_flow"
     cfg.validation_multiplier = 1
 
-    dataset = OpticalFlowVideoDataset(cfg, "training")
+    dataset = DiffusionPolicyDataset(cfg, "training")
     print(len(dataset))
     print(dataset.get_data_lengths("training"))
 
